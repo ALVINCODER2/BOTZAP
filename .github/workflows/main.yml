@@ -1,21 +1,17 @@
 name: Bot WhatsApp 24h
 
 on:
-  # GATILHO 1: Roda automaticamente assim que você faz um 'git push'
   push:
     branches: ["main"]
-
-  # GATILHO 2: Reinicia automaticamente a cada 5 horas e 30 min para não cair
   schedule:
     - cron: "30 */5 * * *"
-
-  # GATILHO 3: Permite clicar no botão para rodar manualmente se precisar
   workflow_dispatch:
 
 jobs:
   run-bot:
-    runs-on: ubuntu-latest
-    timeout-minutes: 330 # Mata o processo antes de 6h para evitar bloqueio do GitHub
+    # ALTERAÇÃO IMPORTANTE: Fixamos no ubuntu-22.04 para evitar erros de compatibilidade
+    runs-on: ubuntu-22.04
+    timeout-minutes: 330
 
     steps:
       - name: Baixar Código
@@ -27,7 +23,6 @@ jobs:
           node-version: "18"
           cache: "npm"
 
-      # Cache para tentar salvar a sessão do WhatsApp entre reinícios
       - name: Cache da Sessão WhatsApp
         uses: actions/cache@v3
         id: session-cache
@@ -42,7 +37,7 @@ jobs:
       - name: Instalar Dependências do Projeto
         run: npm ci
 
-      # Instala o Chrome e dependências necessárias para o Linux
+      # A lista de dependências abaixo funciona perfeitamente no ubuntu-22.04
       - name: Instalar Dependências do Linux
         run: |
           sudo apt-get update
