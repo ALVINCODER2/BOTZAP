@@ -1,19 +1,21 @@
-name: Bot WhatsApp 24h (Gambiarra)
+name: Bot WhatsApp 24h
 
 on:
-  # Roda a cada 5 horas e 30 min (cronograma UTC)
-  # O GitHub tem um limite de 6h por job, então reiniciamos antes disso.
+  # GATILHO 1: Roda automaticamente assim que você faz um 'git push'
+  push:
+    branches: ["main"]
+
+  # GATILHO 2: Reinicia automaticamente a cada 5 horas e 30 min para não cair
   schedule:
     - cron: "30 */5 * * *"
 
-  # Permite que você clique num botão "Run workflow" manualmente na aba Actions
+  # GATILHO 3: Permite clicar no botão para rodar manualmente se precisar
   workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    # Define um limite de tempo para o job morrer antes do GitHub matar forçado
-    timeout-minutes: 330
+    timeout-minutes: 330 # Mata o processo antes de 6h para evitar bloqueio do GitHub
 
     steps:
       - name: Baixar Código
@@ -25,8 +27,7 @@ jobs:
           node-version: "18"
           cache: "npm"
 
-      # --- O TRUQUE DO CACHE ---
-      # Tenta salvar/restaurar a pasta .wwebjs_auth para você não ter que ler QR Code toda vez
+      # Cache para tentar salvar a sessão do WhatsApp entre reinícios
       - name: Cache da Sessão WhatsApp
         uses: actions/cache@v3
         id: session-cache
@@ -34,7 +35,6 @@ jobs:
           path: |
             .wwebjs_auth
             .wwebjs_cache
-          # A chave muda a cada execução para forçar salvar o cache novo ao final
           key: session-${{ github.run_id }}
           restore-keys: |
             session-
@@ -42,12 +42,11 @@ jobs:
       - name: Instalar Dependências do Projeto
         run: npm ci
 
-      # O Puppeteer precisa dessas bibliotecas no Linux para o Chrome abrir
-      - name: Instalar Dependências do Linux (Chrome)
+      # Instala o Chrome e dependências necessárias para o Linux
+      - name: Instalar Dependências do Linux
         run: |
           sudo apt-get update
           sudo apt-get install -y libgbm-dev wget unzip fontconfig locales gconf-service libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils
 
       - name: Iniciar Bot
-        # Roda o bot. Se der erro, o GitHub avisa.
         run: node index.js
