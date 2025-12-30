@@ -78,6 +78,12 @@ client.on("message", async (msg) => {
     /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-z0-9]+\.[a-z]{2,}(\/.*)?)/gi;
 
   if (linkRegex.test(msg.body) && !msg.fromMe) {
+    // 🛡️ WHITELIST: Permite links do "damasarena.fly.dev"
+    // Se a mensagem contém esse texto, o bot ignora e NÃO apaga.
+    if (msg.body.includes("damasarena.fly.dev")) {
+      return;
+    }
+
     try {
       const chat = await msg.getChat();
 
