@@ -1,0 +1,29 @@
+name: Whatsapp Bot Links
+
+on:
+  push:
+    branches: [ master ] # O GitHub Actions vai rodar sempre que você der push na master
+  schedule:
+    - cron: '0 */6 * * *' # Reinicia a cada 6 horas para evitar o limite do GitHub
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Chrome and Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable libnss3 libatk-bridge2.0-0 libxcomposite1 libxdamage1 libxrandr2 libgbm1
+          npm install
+
+      - name: Start Bot
+        run: npm start
