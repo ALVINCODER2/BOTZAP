@@ -81,10 +81,11 @@ client.on("message", async (msg) => {
     try {
       const chat = await msg.getChat();
 
-      if (chat.isGroup) {
+      // Só apaga se for grupo E se o nome for EXATAMENTE "DAMAS APOSTADO ♟️"
+      if (chat.isGroup && chat.name === "DAMAS APOSTADO ♟️") {
         await msg.delete(true);
         console.log(`🚫 Link detectado e apagado em: ${chat.name}`);
-        // await chat.sendMessage("⚠️ *Links não são permitidos neste grupo!*"); // Opcional: descomente se quiser avisar
+        // await chat.sendMessage("⚠️ *Links não são permitidos neste grupo!*");
       }
     } catch (error) {
       if (!error.message?.includes("getIsMyContact")) {
