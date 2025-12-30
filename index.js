@@ -4,22 +4,24 @@ const QRCode = require("qrcode"); // Biblioteca para gerar arquivo de imagem
 const fs = require("fs");
 
 const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: {
-        headless: true,
-        // O pulo do gato está nestas flags extras para o GitHub
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process',
-            '--disable-gpu'
-        ],
-        executablePath: '/usr/bin/google-chrome'
-    }
+  authStrategy: new LocalAuth(),
+  puppeteer: {
+    headless: true,
+    executablePath: "/usr/bin/google-chrome",
+    // Adicione estas linhas para garantir estabilidade no GitHub
+    userDataDir: "./.wwebjs_auth/session",
+    ignoreDefaultArgs: ["--disable-extensions"],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-accelerated-2d-canvas",
+      "--no-first-run",
+      "--no-zygote",
+      "--single-process",
+      "--disable-gpu",
+    ],
+  },
 });
 
 // Evento disparado quando o QR Code é gerado
