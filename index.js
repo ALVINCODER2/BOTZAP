@@ -4,13 +4,10 @@ const QRCode = require("qrcode"); // Biblioteca para gerar arquivo de imagem
 const fs = require("fs");
 
 const client = new Client({
-  authStrategy: new LocalAuth(),
+  authStrategy: new LocalAuth(), // O LocalAuth já cuida da pasta .wwebjs_auth sozinho
   puppeteer: {
     headless: true,
     executablePath: "/usr/bin/google-chrome",
-    // Adicione estas linhas para garantir estabilidade no GitHub
-    userDataDir: "./.wwebjs_auth/session",
-    ignoreDefaultArgs: ["--disable-extensions"],
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
