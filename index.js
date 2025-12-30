@@ -1,13 +1,14 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcodeTerminal = require("qrcode-terminal");
-const QRCode = require("qrcode"); // Biblioteca para gerar arquivo de imagem
+const QRCode = require("qrcode");
 const fs = require("fs");
 
+// Configuração do Cliente
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
-    headless: true,
-    executablePath: "/usr/bin/google-chrome", // Caminho padrão no Ubuntu
+    headless: true, // Mude para false se quiser ver o Chrome abrindo no seu PC
+    // executablePath: "/usr/bin/google-chrome", // Comentado para funcionar em Windows/Mac/Linux automaticamente
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -17,49 +18,61 @@ const client = new Client({
       "--single-process",
       "--hide-scrollbars",
       "--disable-notifications",
-      "--disable-background-timer-throttling",
-      "--disable-backgrounding-occluded-windows",
-      "--disable-breakpad",
-      "--disable-component-extensions-with-background-pages",
-      "--disable-extensions",
-      "--disable-features=TranslateUI,BlinkGenPropertyTrees",
-      "--disable-ipc-flooding-protection",
-      "--disable-renderer-backgrounding",
-      "--force-color-profile=srgb",
-      "--metrics-recording-only",
-      "--mute-audio",
     ],
   },
 });
 
-// Evento disparado quando o QR Code é gerado
+// 1. Geração do QR Code
 client.on("qr", (qr) => {
-  console.log("--- NOVO QR CODE GERADO ---");
+  console.log("\n--- NOVO QR CODE GERADO ---");
+  qrcodeTerminal.generate(qr, { small: true });
 
-  // Opção 1: No Terminal (ajustado para ser maior/melhor leitura)
-  qrcodeTerminal.generate(qr, { small: false });
-
-  // Opção 2: Salva em um arquivo .png para você abrir no computador
   QRCode.toFile("./qrcode.png", qr, (err) => {
-    if (err) {
-      console.error("Erro ao salvar o QR Code em imagem:", err);
-    } else {
-      console.log('SUCESSO: O QR Code foi salvo como "qrcode.png".');
-      console.log("Abra este arquivo na sua pasta e escaneie com o celular.");
-    }
+    if (err) console.error("Erro ao salvar arquivo QR:", err);
   });
 });
 
-// Evento quando o bot conecta com sucesso
+// 2. Conexão realizada + GAMBIARRA DE REINÍCIO
 client.on("ready", () => {
-  console.log("✅ Bot online e monitorando links!");
-  // Apaga a imagem do QR Code após logar para manter a pasta limpa
-  if (fs.existsSync("./qrcode.png")) {
-    fs.unlinkSync("./qrcode.png");
-  }
+  console.log("✅ Bot conectado e monitorando links!");
+
+  if (fs.existsSync("./qrcode.png")) fs.unlinkSync("./qrcode.png");
+
+  // --- INÍCIO DA GAMBIARRA ---
+  // Reinicia o bot a cada 6 horas (21.600.000 milissegundos)
+  // Isso previne que o Chrome consuma toda a memória RAM do servidor
+  const SEIS_HORAS = 6 * 60 * 60 * 1000;
+
+  setTimeout(async () => {
+    console.log(
+      "\n⏰ 6 horas de operação! Iniciando reinicialização preventiva..."
+    );
+    try {
+      // Passo 1: Fecha o navegador e desconecta
+      await client.destroy();
+      console.log("♻️  Sessão anterior encerrada. Liberando memória...");
+
+      // Passo 2: Espera 5 segundos para o sistema respirar
+      setTimeout(() => {
+        console.log("🚀 Reiniciando o bot agora...");
+        client.initialize();
+      }, 5000);
+    } catch (err) {
+      console.error("❌ Falha ao tentar reiniciar automaticamente:", err);
+      // Se der erro grave, força o fechamento do processo (se usar PM2, ele sobe de volta)
+      process.exit(1);
+    }
+  }, SEIS_HORAS);
+  // --- FIM DA GAMBIARRA ---
 });
 
-// Lógica de Moderação de Links
+// 3. Reconexão automática em caso de queda
+client.on("disconnected", (reason) => {
+  console.log("❌ Bot desconectado:", reason);
+  client.initialize();
+});
+
+// 4. Lógica de Moderação de Links
 client.on("message", async (msg) => {
   const linkRegex =
     /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-z0-9]+\.[a-z]{2,}(\/.*)?)/gi;
@@ -69,26 +82,17 @@ client.on("message", async (msg) => {
       const chat = await msg.getChat();
 
       if (chat.isGroup) {
-        // Foca primeiro em apagar a mensagem
         await msg.delete(true);
-        console.log("✅ Link removido com sucesso.");
-
-        // Envia o aviso de forma simples, sem buscar o objeto Contact completo
-        // Usamos o ID direto da mensagem para evitar o erro do getContact()
-        const authorId = msg.author || msg.from;
-        await chat.sendMessage(`⚠️ Links não são permitidos neste grupo!`);
+        console.log(`🚫 Link detectado e apagado em: ${chat.name}`);
+        // await chat.sendMessage("⚠️ *Links não são permitidos neste grupo!*"); // Opcional: descomente se quiser avisar
       }
     } catch (error) {
-      // Se o erro persistir, aqui filtramos para não poluir o console
-      if (error.message.includes("getIsMyContact")) {
-        console.log(
-          "Log: Link apagado, mas houve erro ao identificar o nome do autor (Bug da biblioteca)."
-        );
-      } else {
-        console.error("Falha técnica real:", error.message);
+      if (!error.message?.includes("getIsMyContact")) {
+        console.error("Erro ao apagar link:", error.message);
       }
     }
   }
 });
 
+console.log("Inicializando bot...");
 client.initialize();

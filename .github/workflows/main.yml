@@ -1,27 +1,53 @@
-name: Whatsapp Bot Links
+name: Bot WhatsApp 24h (Gambiarra)
 
 on:
-  push:
-    branches: [master]
+  # Roda a cada 5 horas e 30 min (cronograma UTC)
+  # O GitHub tem um limite de 6h por job, então reiniciamos antes disso.
+  schedule:
+    - cron: "30 */5 * * *"
+
+  # Permite que você clique num botão "Run workflow" manualmente na aba Actions
+  workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    # Define um limite de tempo para o job morrer antes do GitHub matar forçado
+    timeout-minutes: 330
 
     steps:
-      - name: Checkout repository
+      - name: Baixar Código
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: Configurar Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: "18"
+          cache: "npm"
 
-      - name: Install System Dependencies
+      # --- O TRUQUE DO CACHE ---
+      # Tenta salvar/restaurar a pasta .wwebjs_auth para você não ter que ler QR Code toda vez
+      - name: Cache da Sessão WhatsApp
+        uses: actions/cache@v3
+        id: session-cache
+        with:
+          path: |
+            .wwebjs_auth
+            .wwebjs_cache
+          # A chave muda a cada execução para forçar salvar o cache novo ao final
+          key: session-${{ github.run_id }}
+          restore-keys: |
+            session-
+
+      - name: Instalar Dependências do Projeto
+        run: npm ci
+
+      # O Puppeteer precisa dessas bibliotecas no Linux para o Chrome abrir
+      - name: Instalar Dependências do Linux (Chrome)
         run: |
           sudo apt-get update
-          sudo apt-get install -y google-chrome-stable libnss3 libatk-bridge2.0-0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2t64 libpangocairo-1.0-0 libgtk-3-0
-          npm install
+          sudo apt-get install -y libgbm-dev wget unzip fontconfig locales gconf-service libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils
 
-      - name: Start Bot
-        run: npm start
+      - name: Iniciar Bot
+        # Roda o bot. Se der erro, o GitHub avisa.
+        run: node index.js
