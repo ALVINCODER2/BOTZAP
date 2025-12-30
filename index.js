@@ -7,7 +7,7 @@ const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
     headless: true,
-    executablePath: "/usr/bin/google-chrome",
+    // Remova o executablePath para usar o Chromium interno mais compatível
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -15,6 +15,19 @@ const client = new Client({
       "--disable-gpu",
       "--no-zygote",
       "--single-process",
+      "--hide-scrollbars",
+      "--disable-notifications",
+      "--disable-background-timer-throttling",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-breakpad",
+      "--disable-component-extensions-with-background-pages",
+      "--disable-extensions",
+      "--disable-features=TranslateUI,BlinkGenPropertyTrees",
+      "--disable-ipc-flooding-protection",
+      "--disable-renderer-backgrounding",
+      "--force-color-profile=srgb",
+      "--metrics-recording-only",
+      "--mute-audio",
     ],
   },
 });
