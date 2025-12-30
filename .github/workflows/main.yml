@@ -16,13 +16,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: "npm"
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable libnss3 libatk-bridge2.0-0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2t64 libpangocairo-1.0-0 libgtk-3-0
           npm install
-          # Garante as permissões das bibliotecas do Chrome no Linux
-          npx puppeteer browsers install chrome
 
       - name: Start Bot
         run: npm start

@@ -7,7 +7,7 @@ const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
     headless: true,
-    // Remova o executablePath para usar o Chromium interno mais compatível
+    executablePath: "/usr/bin/google-chrome", // Caminho padrão no Ubuntu
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
