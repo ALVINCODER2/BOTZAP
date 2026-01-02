@@ -9,7 +9,6 @@ on:
 
 jobs:
   run-bot:
-    # ALTERAÇÃO IMPORTANTE: Fixamos no ubuntu-22.04 para evitar erros de compatibilidade
     runs-on: ubuntu-22.04
     timeout-minutes: 330
 
@@ -30,14 +29,14 @@ jobs:
           path: |
             .wwebjs_auth
             .wwebjs_cache
-          key: session-${{ github.run_id }}
+          # MUDEI A CHAVE PARA 'v2' PARA FORÇAR LIMPEZA DA SESSÃO ANTIGA
+          key: session-v2-${{ github.run_id }}
           restore-keys: |
-            session-
+            session-v2-
 
       - name: Instalar Dependências do Projeto
         run: npm ci
 
-      # A lista de dependências abaixo funciona perfeitamente no ubuntu-22.04
       - name: Instalar Dependências do Linux
         run: |
           sudo apt-get update
