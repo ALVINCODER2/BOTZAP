@@ -7,14 +7,14 @@ const fs = require("fs");
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
-    headless: true,
+    headless: true, // Mude para false se quiser ver o navegador abrindo
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
-      "--no-zygote",
-      "--single-process",
+      // "--no-zygote",       <-- REMOVIDO: Causa erro no Windows
+      // "--single-process",  <-- REMOVIDO: Causa erro no Windows
       "--hide-scrollbars",
       "--disable-notifications",
     ],
@@ -63,13 +63,29 @@ client.on("ready", () => {
   }, SEIS_HORAS);
 });
 
-// 3. Reconexão automática (CORRIGIDA)
+// 3. Reconexão automática INTELIGENTE
 client.on("disconnected", async (reason) => {
   console.log("❌ Bot desconectado:", reason);
   grupoAlvoId = null; // Limpa a memória se cair
 
-  // CORREÇÃO CRÍTICA: Destrói o navegador antigo antes de criar um novo
-  // Isso evita o erro "window['onQRChangedEvent'] already exists"
+  // SE FOR LOGOUT, A SESSÃO ESTÁ ESTRAGADA. VAMOS APAGAR!
+  if (reason === "LOGOUT" || reason === "NAVIGATION") {
+    console.log("🧹 Detectei sessão corrompida. Limpando arquivos de login...");
+    try {
+      // Apaga a pasta de autenticação para forçar novo QR Code
+      const sessionPath = "./.wwebjs_auth";
+      if (fs.existsSync(sessionPath)) {
+        fs.rmSync(sessionPath, { recursive: true, force: true });
+        console.log("🗑️ Pasta .wwebjs_auth apagada com sucesso.");
+      }
+    } catch (error) {
+      console.error(
+        "⚠️ Não consegui apagar a pasta automaticamente:",
+        error.message
+      );
+    }
+  }
+
   try {
     await client.destroy();
   } catch (error) {
@@ -79,6 +95,7 @@ client.on("disconnected", async (reason) => {
   }
 
   // Espera um pouco antes de tentar conectar de novo
+  console.log("🔄 Tentando reconectar em 5 segundos...");
   setTimeout(() => {
     client.initialize();
   }, 5000);

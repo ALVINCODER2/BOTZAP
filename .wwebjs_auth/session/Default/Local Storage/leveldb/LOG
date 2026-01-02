@@ -1,3 +1,2 @@
-2026/01/02-11:55:35.715 60a0 Reusing MANIFEST C:\Users\Tiago\Desktop\BOTZAP\.wwebjs_auth\session\Default\Local Storage\leveldb/MANIFEST-000001
-2026/01/02-11:55:35.746 60a0 Recovering log #4
-2026/01/02-11:55:35.747 60a0 Reusing old log C:\Users\Tiago\Desktop\BOTZAP\.wwebjs_auth\session\Default\Local Storage\leveldb/000004.log 
+2026/01/02-12:08:21.969 5d78 Creating DB C:\Users\Tiago\Desktop\BOTZAP\.wwebjs_auth\session\Default\Local Storage\leveldb since it was missing.
+2026/01/02-12:08:22.149 5d78 Reusing MANIFEST C:\Users\Tiago\Desktop\BOTZAP\.wwebjs_auth\session\Default\Local Storage\leveldb/MANIFEST-000001
