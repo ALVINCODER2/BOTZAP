@@ -29,10 +29,11 @@ jobs:
           path: |
             .wwebjs_auth
             .wwebjs_cache
-          # MUDEI A CHAVE PARA 'v3' PARA LIMPAR A SESSÃO CORROMPIDA QUE ESTÁ CAUSANDO O ERRO "LOGOUT"
-          key: session-v3-${{ github.run_id }}
+          # MUDANÇA CRÍTICA: Atualizei para 'v4' para ignorar qualquer cache antigo/corrompido
+          # Isso forçará o bot a pedir um NOVO QR Code. Fique atento aos logs!
+          key: session-v4-${{ github.run_id }}
           restore-keys: |
-            session-v3-
+            session-v4-
 
       - name: Instalar Dependências do Projeto
         run: npm ci
