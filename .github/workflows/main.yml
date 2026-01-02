@@ -29,11 +29,10 @@ jobs:
           path: |
             .wwebjs_auth
             .wwebjs_cache
-          # MUDANÇA CRÍTICA: Atualizei para 'v4' para ignorar qualquer cache antigo/corrompido
-          # Isso forçará o bot a pedir um NOVO QR Code. Fique atento aos logs!
-          key: session-v4-${{ github.run_id }}
+          # MUDANÇA PARA v5: Força o GitHub a esquecer a sessão antiga que está dando erro
+          key: session-v5-${{ github.run_id }}
           restore-keys: |
-            session-v4-
+            session-v5-
 
       - name: Instalar Dependências do Projeto
         run: npm ci
