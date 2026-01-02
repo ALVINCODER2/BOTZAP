@@ -29,10 +29,10 @@ jobs:
           path: |
             .wwebjs_auth
             .wwebjs_cache
-          # MUDEI A CHAVE PARA 'v2' PARA FORÇAR LIMPEZA DA SESSÃO ANTIGA
-          key: session-v2-${{ github.run_id }}
+          # MUDEI A CHAVE PARA 'v3' PARA LIMPAR A SESSÃO CORROMPIDA QUE ESTÁ CAUSANDO O ERRO "LOGOUT"
+          key: session-v3-${{ github.run_id }}
           restore-keys: |
-            session-v2-
+            session-v3-
 
       - name: Instalar Dependências do Projeto
         run: npm ci
