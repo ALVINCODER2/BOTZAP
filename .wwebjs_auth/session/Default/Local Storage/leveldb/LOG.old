@@ -1,6 +1,3 @@
-2025/12/30-14:42:59.347 849c Reusing MANIFEST C:\Users\Tiago\Desktop\Bot\.wwebjs_auth\session\Default\Local Storage\leveldb/MANIFEST-000001
-2025/12/30-14:42:59.347 849c Recovering log #3
-2025/12/30-14:42:59.348 849c Reusing old log C:\Users\Tiago\Desktop\Bot\.wwebjs_auth\session\Default\Local Storage\leveldb/000003.log 
-2025/12/30-15:05:19.053 822c Level-0 table #5: started
-2025/12/30-15:05:19.058 822c Level-0 table #5: 18601 bytes OK
-2025/12/30-15:05:19.060 822c Delete type=0 #3
+2025/12/30-15:19:23.821 1a50 Reusing MANIFEST C:\Users\Tiago\Desktop\BOTZAP\.wwebjs_auth\session\Default\Local Storage\leveldb/MANIFEST-000001
+2025/12/30-15:19:23.822 1a50 Recovering log #4
+2025/12/30-15:19:23.822 1a50 Reusing old log C:\Users\Tiago\Desktop\BOTZAP\.wwebjs_auth\session\Default\Local Storage\leveldb/000004.log 
