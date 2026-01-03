@@ -3,14 +3,15 @@ name: Bot WhatsApp 24h
 on:
   push:
     branches: ["main"]
+  # MUDANÇA: Roda a cada 6 horas (00:00, 06:00, 12:00, 18:00 UTC)
   schedule:
-    - cron: "30 */5 * * *"
+    - cron: "0 */6 * * *"
   workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-22.04
-    timeout-minutes: 330
+    timeout-minutes: 350 # Aumentei o limite de segurança para 5h 50m
 
     steps:
       - name: Baixar Código
@@ -29,7 +30,6 @@ jobs:
           path: |
             .wwebjs_auth
             .wwebjs_cache
-          # MUDANÇA PARA v5: Força o GitHub a esquecer a sessão antiga que está dando erro
           key: session-v5-${{ github.run_id }}
           restore-keys: |
             session-v5-
