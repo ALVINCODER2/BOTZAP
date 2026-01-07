@@ -26,6 +26,24 @@ const client = new Client({
 let grupoAlvoId = null;
 let isShuttingDown = false; // Trava para evitar reconexão no fim do turno
 
+// Sistema de rastreamento de links por usuário
+let violacoesPorUsuario = {}; // { userId: { count: number, date: string } }
+
+// Função para resetar contador diário
+function resetarContagemDiaria(userId) {
+  const hoje = new Date().toDateString();
+  if (!violacoesPorUsuario[userId] || violacoesPorUsuario[userId].date !== hoje) {
+    violacoesPorUsuario[userId] = { count: 0, date: hoje };
+  }
+}
+
+// Função para incrementar violações
+function registrarViolacao(userId) {
+  resetarContagemDiaria(userId);
+  violacoesPorUsuario[userId].count++;
+  return violacoesPorUsuario[userId].count;
+}
+
 client.on("qr", (qr) => {
   if (isShuttingDown) return; // Não gera QR se estiver desligando
   console.log("\n--- NOVO QR CODE GERADO ---");
@@ -95,8 +113,33 @@ client.on("message", async (msg) => {
 
     if (grupoAlvoId && msg.from === grupoAlvoId) {
       try {
+        // Deletar o link
         await msg.delete(true);
-      } catch (e) {}
+
+        // Registrar violação e contar
+        const userId = msg.author || msg.from;
+        const totalViolacoes = registrarViolacao(userId);
+
+        console.log(`🚨 Link deletado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
+
+        // Enviar mensagem de aviso
+        const mensagemAviso = `Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
+        
+        await msg.reply(mensagemAviso);
+
+        // Se atingiu 4 violações, remover do grupo
+        if (totalViolacoes >= 4) {
+          try {
+            const chat = await msg.getChat();
+            await chat.removeParticipants([userId]);
+            console.log(`❌ Usuário ${userId} removido após 4 violações.`);
+          } catch (removeError) {
+            console.error("Erro ao remover usuário:", removeError);
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao processar link:", e);
+      }
       return;
     }
 
@@ -104,11 +147,38 @@ client.on("message", async (msg) => {
       const chat = await msg.getChat();
       if (chat.isGroup && chat.name === "DAMAS APOSTADO ♟️") {
         grupoAlvoId = chat.id._serialized;
+        
         try {
+          // Deletar o link
           await msg.delete(true);
-        } catch (delError) {}
+
+          // Registrar violação e contar
+          const userId = msg.author || msg.from;
+          const totalViolacoes = registrarViolacao(userId);
+
+          console.log(`🚨 Link deletado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
+
+          // Enviar mensagem de aviso
+          const mensagemAviso = `Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
+          
+          await msg.reply(mensagemAviso);
+
+          // Se atingiu 4 violações, remover do grupo
+          if (totalViolacoes >= 4) {
+            try {
+              await chat.removeParticipants([userId]);
+              console.log(`❌ Usuário ${userId} removido após 4 violações.`);
+            } catch (removeError) {
+              console.error("Erro ao remover usuário:", removeError);
+            }
+          }
+        } catch (delError) {
+          console.error("Erro ao deletar mensagem:", delError);
+        }
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Erro ao obter chat:", error);
+    }
   }
 });
 
