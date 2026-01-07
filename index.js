@@ -37,12 +37,12 @@ client.on("ready", () => {
   console.log("✅ Bot conectado e monitorando links!");
   if (fs.existsSync("./qrcode.png")) fs.unlinkSync("./qrcode.png");
 
-  // --- CONFIGURAÇÃO DE TEMPO (5h 45m) ---
+  // --- CONFIGURAÇÃO DE TEMPO (5h 55m) ---
   // Roda o máximo possível para diminuir a janela "offline"
-  const TEMPO_LIMITE = (5 * 60 + 45) * 60 * 1000;
+  const TEMPO_LIMITE = (5 * 60 + 55) * 60 * 1000;
 
   setTimeout(async () => {
-    console.log("\n⏰ Turno de 5h 45m encerrado. Passando o bastão...");
+    console.log("\n⏰ Turno de 5h 55m encerrado. Passando o bastão...");
     isShuttingDown = true; // Ativa a trava: Proíbe reconexões
 
     try {
