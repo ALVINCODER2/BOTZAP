@@ -26,24 +26,18 @@ const client = new Client({
     ],
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
   },
-  // Remove webVersionCache to use the latest version automatically
-  // This prevents version mismatch issues
 });
 
 let grupoAlvoId = null;
-let isShuttingDown = false; // Trava para evitar reconexão no fim do turno
+let isShuttingDown = false;
+let violacoesPorUsuario = {};
 
-// Sistema de rastreamento de links por usuário
-let violacoesPorUsuario = {}; // { userId: { count: number, date: string } }
-
-// Handlers de autenticação
 client.on("authenticated", () => {
   console.log("✅ Autenticação bem-sucedida!");
 });
 
 client.on("auth_failure", (msg) => {
   console.error("❌ Falha na autenticação:", msg);
-  // Limpar sessão em caso de falha
   try {
     const sessionPath = "./.wwebjs_auth";
     if (fs.existsSync(sessionPath)) {
@@ -59,7 +53,6 @@ client.on("loading_screen", (percent, message) => {
   console.log(`⏳ Carregando: ${percent}% - ${message}`);
 });
 
-// Função para resetar contador diário
 function resetarContagemDiaria(userId) {
   const hoje = new Date().toDateString();
   if (!violacoesPorUsuario[userId] || violacoesPorUsuario[userId].date !== hoje) {
@@ -67,7 +60,6 @@ function resetarContagemDiaria(userId) {
   }
 }
 
-// Função para incrementar violações
 function registrarViolacao(userId) {
   resetarContagemDiaria(userId);
   violacoesPorUsuario[userId].count++;
@@ -75,7 +67,7 @@ function registrarViolacao(userId) {
 }
 
 client.on("qr", (qr) => {
-  if (isShuttingDown) return; // Não gera QR se estiver desligando
+  if (isShuttingDown) return;
   console.log("\n--- NOVO QR CODE GERADO ---");
   qrcodeTerminal.generate(qr, { small: true });
   QRCode.toFile("./qrcode.png", qr, (err) => {});
@@ -85,13 +77,11 @@ client.on("ready", () => {
   console.log("✅ Bot conectado e monitorando links!");
   if (fs.existsSync("./qrcode.png")) fs.unlinkSync("./qrcode.png");
 
-  // --- CONFIGURAÇÃO DE TEMPO (5h 40m) ---
-  // Roda o máximo possível para diminuir a janela "offline", mas garante shutdown antes do workflow (5h 50m)
   const TEMPO_LIMITE = (5 * 60 + 40) * 60 * 1000;
 
   setTimeout(async () => {
-    console.log("\n⏰ Turno de 5h 55m encerrado. Passando o bastão...");
-    isShuttingDown = true; // Ativa a trava: Proíbe reconexões
+    console.log("\n⏰ Turno de 5h 40m encerrado. Passando o bastão...");
+    isShuttingDown = true;
 
     try {
       await client.destroy();
@@ -104,7 +94,6 @@ client.on("ready", () => {
 });
 
 client.on("disconnected", async (reason) => {
-  // SE A TRAVA ESTIVER ATIVADA, NÃO FAZ NADA (Deixa o bot morrer em paz)
   if (isShuttingDown) {
     console.log("🛑 Desconexão ignorada (Shutdown em andamento).");
     return;
@@ -113,7 +102,6 @@ client.on("disconnected", async (reason) => {
   console.log("❌ Bot desconectado:", reason);
   grupoAlvoId = null;
 
-  // Para LOGOUT ou NAVIGATION, limpar a sessão e aguardar mais tempo
   if (reason === "LOGOUT" || reason === "NAVIGATION") {
     console.log("🗑️ Limpando sessão devido a:", reason);
     try {
@@ -133,7 +121,6 @@ client.on("disconnected", async (reason) => {
       console.error("⚠️ Erro ao destruir cliente:", error.message);
     }
 
-    // Aguardar mais tempo antes de reconectar após LOGOUT
     console.log("🔄 Aguardando 15 segundos antes de reconectar...");
     setTimeout(() => {
       if (!isShuttingDown) {
@@ -144,7 +131,6 @@ client.on("disconnected", async (reason) => {
     return;
   }
 
-  // Para outras desconexões, tentar reconectar mais rápido
   try {
     await client.destroy();
   } catch (error) {
@@ -161,7 +147,7 @@ client.on("disconnected", async (reason) => {
 });
 
 client.on("message", async (msg) => {
-  if (isShuttingDown) return; // Não processa mensagens se estiver saindo
+  if (isShuttingDown) return;
 
   const linkRegex =
     /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-z0-9]+\.[a-z]{2,}(\/.*)?)/gi;
@@ -171,55 +157,43 @@ client.on("message", async (msg) => {
 
     if (grupoAlvoId && msg.from === grupoAlvoId) {
       try {
-        // Obter chat antes de deletar
         const chat = await msg.getChat();
         const userId = msg.author || msg.from;
-        
-        // Registrar violação e contar (fazer isso antes para o aviso estar correto)
         const totalViolacoes = registrarViolacao(userId);
 
         console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-        // 1. Tentar Enviar Aviso (Simplificado)
+        // 1. DELETAR PRIMEIRO (prioridade máxima)
         try {
-          const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
-          // Tentar enviar diretamente pelo chat, sem options de mentions (o @texto já notifica se formatado assim)
-          await chat.sendMessage(mensagemAviso);
-          console.log(`✅ Aviso enviado para ${userId}`);
-        } catch (msgError) {
-          console.error("⚠️ Erro ao enviar aviso (tentativa chat.sendMessage):", msgError.message);
-          
-          // Fallback final: client.sendMessage super simples
-          try {
-             await client.sendMessage(chat.id._serialized, "⚠️ Link detectado e removido. (Erro ao marcar usuário)");
-             console.log("✅ Aviso genérico enviado.");
-          } catch (fallbackError) {
-             console.error("❌ Falha total no envio:", fallbackError.message);
-          }
-        }
-
-        // 2. Deletar o link (PRIORIDADE MÁXIMA - Executa mesmo se msg falhar)
-        try {
-          // Pequeno delay para garantir que a msg anterior foi processada (opcional, mas bom pra UX)
-          await new Promise(resolve => setTimeout(resolve, 500));
           await msg.delete(true);
           console.log("✅ Link deletado com sucesso.");
         } catch (delError) {
-          console.error("❌ Erro fatal ao deletar link:", delError.message);
+          console.error("❌ Erro ao deletar link:", delError.message);
+        }
+
+        // 2. ENVIAR AVISO (método simplificado)
+        try {
+          const numero = userId.split('@')[0];
+          const mensagemAviso = `⚠️ Link removido!\n\n*Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
+          
+          await chat.sendMessage(mensagemAviso);
+          console.log(`✅ Aviso enviado no grupo`);
+        } catch (msgError) {
+          console.error("⚠️ Erro ao enviar aviso:", msgError.message);
         }
 
         // 3. Remover do grupo se necessário
         if (totalViolacoes >= 4) {
           try {
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Delay para garantir leitura
+            await new Promise(resolve => setTimeout(resolve, 2000));
             await chat.removeParticipants([userId]);
             console.log(`❌ Usuário ${userId} removido após 4 violações.`);
           } catch (removeError) {
-            console.error("Erro ao remover usuário:", removeError.message);
+            console.error("⚠️ Erro ao remover usuário:", removeError.message);
           }
         }
       } catch (e) {
-        console.error("Erro ao processar link:", e.message);
+        console.error("❌ Erro ao processar link:", e.message);
       }
       return;
     }
@@ -231,54 +205,45 @@ client.on("message", async (msg) => {
         
         try {
           const userId = msg.author || msg.from;
-          
-          // Registrar violação e contar
           const totalViolacoes = registrarViolacao(userId);
 
           console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-          // 1. Enviar Aviso (Simplificado)
+          // 1. DELETAR PRIMEIRO
           try {
-            const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
-            await chat.sendMessage(mensagemAviso);
-            console.log(`✅ Aviso enviado para ${userId}`);
-          } catch (msgError) {
-            console.error("⚠️ Erro ao enviar aviso (tentativa chat.sendMessage):", msgError.message);
-            
-             // Fallback
-            try {
-              await client.sendMessage(chat.id._serialized, "⚠️ Link detectado e removido. (Erro ao marcar usuário)");
-              console.log("✅ Aviso genérico enviado.");
-            } catch (fallbackError) {
-              console.error("❌ Falha total no envio:", fallbackError.message);
-            }
-          }
-
-          // 2. Deletar (SEMPRE)
-          try {
-            await new Promise(resolve => setTimeout(resolve, 500));
             await msg.delete(true);
             console.log("✅ Link deletado com sucesso.");
           } catch (delError) {
-              console.error("Erro ao deletar mensagem:", delError.message);
+            console.error("❌ Erro ao deletar mensagem:", delError.message);
+          }
+
+          // 2. ENVIAR AVISO
+          try {
+            const numero = userId.split('@')[0];
+            const mensagemAviso = `⚠️ Link removido!\n\n*Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
+            
+            await chat.sendMessage(mensagemAviso);
+            console.log(`✅ Aviso enviado no grupo`);
+          } catch (msgError) {
+            console.error("⚠️ Erro ao enviar aviso:", msgError.message);
           }
 
           // 3. Remover se necessário
           if (totalViolacoes >= 4) {
             try {
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise(resolve => setTimeout(resolve, 2000));
               await chat.removeParticipants([userId]);
               console.log(`❌ Usuário ${userId} removido após 4 violações.`);
             } catch (removeError) {
-              console.error("Erro ao remover usuário:", removeError.message);
+              console.error("⚠️ Erro ao remover usuário:", removeError.message);
             }
           }
         } catch (delError) {
-          console.error("Erro ao deletar mensagem:", delError.message);
+          console.error("❌ Erro ao processar:", delError.message);
         }
       }
     } catch (error) {
-      console.error("Erro ao obter chat:", error);
+      console.error("❌ Erro ao obter chat:", error);
     }
   }
 });
