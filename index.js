@@ -171,24 +171,26 @@ client.on("message", async (msg) => {
 
     if (grupoAlvoId && msg.from === grupoAlvoId) {
       try {
+        // Obter chat antes de deletar
+        const chat = await msg.getChat();
+        const userId = msg.author || msg.from;
+        
         // Deletar o link
         await msg.delete(true);
 
         // Registrar violação e contar
-        const userId = msg.author || msg.from;
         const totalViolacoes = registrarViolacao(userId);
 
         console.log(`🚨 Link deletado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-        // Enviar mensagem de aviso
-        const mensagemAviso = `Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
+        // Enviar mensagem de aviso diretamente ao chat (não pode usar reply pois msg foi deletada)
+        const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
         
-        await msg.reply(mensagemAviso);
+        await chat.sendMessage(mensagemAviso, { mentions: [userId] });
 
         // Se atingiu 4 violações, remover do grupo
         if (totalViolacoes >= 4) {
           try {
-            const chat = await msg.getChat();
             await chat.removeParticipants([userId]);
             console.log(`❌ Usuário ${userId} removido após 4 violações.`);
           } catch (removeError) {
@@ -207,19 +209,20 @@ client.on("message", async (msg) => {
         grupoAlvoId = chat.id._serialized;
         
         try {
+          const userId = msg.author || msg.from;
+          
           // Deletar o link
           await msg.delete(true);
 
           // Registrar violação e contar
-          const userId = msg.author || msg.from;
           const totalViolacoes = registrarViolacao(userId);
 
           console.log(`🚨 Link deletado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-          // Enviar mensagem de aviso
-          const mensagemAviso = `Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
+          // Enviar mensagem de aviso diretamente ao chat (não pode usar reply pois msg foi deletada)
+          const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
           
-          await msg.reply(mensagemAviso);
+          await chat.sendMessage(mensagemAviso, { mentions: [userId] });
 
           // Se atingiu 4 violações, remover do grupo
           if (totalViolacoes >= 4) {
