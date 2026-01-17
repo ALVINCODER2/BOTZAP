@@ -163,7 +163,21 @@ client.on("message", async (msg) => {
 
         console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-        // 1. DELETAR O LINK IMEDIATAMENTE
+        // 1. AVISAR (reply é seguro)
+        try {
+          const mensagemAviso = `⚠️ Link removido!\n\nAvisos hoje: ${totalViolacoes}/4` + 
+            (totalViolacoes >= 4 ? `\n\n🔴 LIMITE ATINGIDO - Remoção iminente!` : "");
+          
+          await msg.reply(mensagemAviso);
+          console.log(`✅ Aviso enviado no grupo`);
+        } catch (msgError) {
+          console.error("⚠️ Erro ao enviar aviso:", msgError.message);
+        }
+
+        // 2. Aguardar curto intervalo
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        // 3. DELETAR
         try {
           await msg.delete(true);
           console.log("✅ Link deletado com sucesso.");
@@ -171,11 +185,7 @@ client.on("message", async (msg) => {
           console.error("❌ Erro ao deletar link:", delError.message);
         }
 
-        // 2. LOG do aviso (mensagem no console)
-        console.log(`📢 AVISO: Usuário ${userId} - Violações: ${totalViolacoes}/4`);
-        if (totalViolacoes >= 4) {
-          console.log(`🔴 ATENÇÃO: Usuário atingiu limite - será removido!`);
-        }
+        console.log(`📢 Usuário ${userId} - Violações: ${totalViolacoes}/4`);
 
         // 3. Remover do grupo se necessário
         if (totalViolacoes >= 4) {
@@ -204,7 +214,21 @@ client.on("message", async (msg) => {
 
           console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-          // 1. DELETAR O LINK IMEDIATAMENTE
+          // 1. AVISAR (reply é seguro)
+          try {
+            const mensagemAviso = `⚠️ Link removido!\n\nAvisos hoje: ${totalViolacoes}/4` + 
+              (totalViolacoes >= 4 ? `\n\n🔴 LIMITE ATINGIDO - Remoção iminente!` : "");
+            
+            await msg.reply(mensagemAviso);
+            console.log(`✅ Aviso enviado no grupo`);
+          } catch (msgError) {
+            console.error("⚠️ Erro ao enviar aviso:", msgError.message);
+          }
+
+          // 2. Aguardar curto intervalo
+          await new Promise(resolve => setTimeout(resolve, 800));
+
+          // 3. DELETAR
           try {
             await msg.delete(true);
             console.log("✅ Link deletado com sucesso.");
@@ -212,11 +236,7 @@ client.on("message", async (msg) => {
             console.error("❌ Erro ao deletar mensagem:", delError.message);
           }
 
-          // 2. LOG do aviso (mensagem no console)
-          console.log(`📢 AVISO: Usuário ${userId} - Violações: ${totalViolacoes}/4`);
-          if (totalViolacoes >= 4) {
-            console.log(`🔴 ATENÇÃO: Usuário atingiu limite - será removido!`);
-          }
+          console.log(`📢 Usuário ${userId} - Violações: ${totalViolacoes}/4`);
 
           // 3. Remover se necessário
           if (totalViolacoes >= 4) {
