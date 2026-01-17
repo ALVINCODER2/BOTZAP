@@ -163,22 +163,32 @@ client.on("message", async (msg) => {
 
         console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-        // 1. DELETAR PRIMEIRO (prioridade máxima)
+        // 1. ENVIAR AVISO PRIMEIRO (antes de deletar)
         try {
+          const mensagemAviso = `⚠️ *Link removido!*\n\n📊 *Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n\n🔴 *LIMITE ATINGIDO!*\n_Você será removido do grupo._" : ""}`;
+          
+          await msg.reply(mensagemAviso);
+          console.log(`✅ Aviso enviado (reply)`);
+        } catch (msgError) {
+          console.error("⚠️ Erro ao enviar aviso:", msgError.message);
+          // Fallback: tentar enviar direto no chat
+          try {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const mensagemAviso = `⚠️ Link removido! Avisos: ${totalViolacoes}/4`;
+            await client.sendMessage(chat.id._serialized, mensagemAviso);
+            console.log(`✅ Aviso enviado (fallback)`);
+          } catch (fallbackError) {
+            console.error("❌ Fallback falhou:", fallbackError.message);
+          }
+        }
+
+        // 2. DELETAR DEPOIS
+        try {
+          await new Promise(resolve => setTimeout(resolve, 1000));
           await msg.delete(true);
           console.log("✅ Link deletado com sucesso.");
         } catch (delError) {
           console.error("❌ Erro ao deletar link:", delError.message);
-        }
-
-        // 2. ENVIAR AVISO (usando client.sendMessage diretamente)
-        try {
-          const mensagemAviso = `⚠️ *Link removido!*\n\n📊 *Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n\n🔴 *LIMITE ATINGIDO!*\n_Você será removido do grupo._" : ""}`;
-          
-          await client.sendMessage(msg.from, mensagemAviso);
-          console.log(`✅ Aviso enviado no grupo`);
-        } catch (msgError) {
-          console.error("⚠️ Erro ao enviar aviso:", msgError.message);
         }
 
         // 3. Remover do grupo se necessário
@@ -208,22 +218,32 @@ client.on("message", async (msg) => {
 
           console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-          // 1. DELETAR PRIMEIRO
+          // 1. ENVIAR AVISO PRIMEIRO (antes de deletar)
           try {
+            const mensagemAviso = `⚠️ *Link removido!*\n\n📊 *Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n\n🔴 *LIMITE ATINGIDO!*\n_Você será removido do grupo._" : ""}`;
+            
+            await msg.reply(mensagemAviso);
+            console.log(`✅ Aviso enviado (reply)`);
+          } catch (msgError) {
+            console.error("⚠️ Erro ao enviar aviso:", msgError.message);
+            // Fallback: tentar enviar direto no chat
+            try {
+              await new Promise(resolve => setTimeout(resolve, 500));
+              const mensagemAviso = `⚠️ Link removido! Avisos: ${totalViolacoes}/4`;
+              await client.sendMessage(chat.id._serialized, mensagemAviso);
+              console.log(`✅ Aviso enviado (fallback)`);
+            } catch (fallbackError) {
+              console.error("❌ Fallback falhou:", fallbackError.message);
+            }
+          }
+
+          // 2. DELETAR DEPOIS
+          try {
+            await new Promise(resolve => setTimeout(resolve, 1000));
             await msg.delete(true);
             console.log("✅ Link deletado com sucesso.");
           } catch (delError) {
             console.error("❌ Erro ao deletar mensagem:", delError.message);
-          }
-
-          // 2. ENVIAR AVISO (usando client.sendMessage diretamente)
-          try {
-            const mensagemAviso = `⚠️ *Link removido!*\n\n📊 *Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n\n🔴 *LIMITE ATINGIDO!*\n_Você será removido do grupo._" : ""}`;
-            
-            await client.sendMessage(msg.from, mensagemAviso);
-            console.log(`✅ Aviso enviado no grupo`);
-          } catch (msgError) {
-            console.error("⚠️ Erro ao enviar aviso:", msgError.message);
           }
 
           // 3. Remover se necessário
