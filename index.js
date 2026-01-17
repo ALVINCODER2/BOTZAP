@@ -171,12 +171,11 @@ client.on("message", async (msg) => {
           console.error("❌ Erro ao deletar link:", delError.message);
         }
 
-        // 2. ENVIAR AVISO (método simplificado)
+        // 2. ENVIAR AVISO (usando client.sendMessage diretamente)
         try {
-          const numero = userId.split('@')[0];
-          const mensagemAviso = `⚠️ Link removido!\n\n*Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
+          const mensagemAviso = `⚠️ *Link removido!*\n\n📊 *Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n\n🔴 *LIMITE ATINGIDO!*\n_Você será removido do grupo._" : ""}`;
           
-          await chat.sendMessage(mensagemAviso);
+          await client.sendMessage(msg.from, mensagemAviso);
           console.log(`✅ Aviso enviado no grupo`);
         } catch (msgError) {
           console.error("⚠️ Erro ao enviar aviso:", msgError.message);
@@ -217,12 +216,11 @@ client.on("message", async (msg) => {
             console.error("❌ Erro ao deletar mensagem:", delError.message);
           }
 
-          // 2. ENVIAR AVISO
+          // 2. ENVIAR AVISO (usando client.sendMessage diretamente)
           try {
-            const numero = userId.split('@')[0];
-            const mensagemAviso = `⚠️ Link removido!\n\n*Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
+            const mensagemAviso = `⚠️ *Link removido!*\n\n📊 *Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n\n🔴 *LIMITE ATINGIDO!*\n_Você será removido do grupo._" : ""}`;
             
-            await chat.sendMessage(mensagemAviso);
+            await client.sendMessage(msg.from, mensagemAviso);
             console.log(`✅ Aviso enviado no grupo`);
           } catch (msgError) {
             console.error("⚠️ Erro ao enviar aviso:", msgError.message);
