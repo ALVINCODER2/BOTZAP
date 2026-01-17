@@ -171,26 +171,10 @@ client.on("message", async (msg) => {
           console.error("❌ Erro ao deletar link:", delError.message);
         }
 
-        // 2. ENVIAR AVISO (método mais simples possível)
-        try {
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          const mensagemAviso = `⚠️ Link removido! Avisos: ${totalViolacoes}/4` + 
-            (totalViolacoes >= 4 ? "\n🔴 LIMITE ATINGIDO - Remoção iminente!" : "");
-          
-          // Tentar enviar de forma mais direta
-          const chatId = msg.from;
-          await client.pupPage.evaluate((chatId, mensagem) => {
-            const chat = window.Store.Chat.get(chatId);
-            if (chat) {
-              chat.sendMessage(mensagem);
-            }
-          }, chatId, mensagemAviso);
-          
-          console.log(`✅ Aviso enviado via pupPage`);
-        } catch (msgError) {
-          console.error("⚠️ Não foi possível enviar aviso:", msgError.message);
-          // Continua mesmo sem enviar o aviso - o importante é deletar
+        // 2. LOG do aviso (mensagem no console)
+        console.log(`📢 AVISO: Usuário ${userId} - Violações: ${totalViolacoes}/4`);
+        if (totalViolacoes >= 4) {
+          console.log(`🔴 ATENÇÃO: Usuário atingiu limite - será removido!`);
         }
 
         // 3. Remover do grupo se necessário
@@ -228,26 +212,10 @@ client.on("message", async (msg) => {
             console.error("❌ Erro ao deletar mensagem:", delError.message);
           }
 
-          // 2. ENVIAR AVISO (método mais simples possível)
-          try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            const mensagemAviso = `⚠️ Link removido! Avisos: ${totalViolacoes}/4` + 
-              (totalViolacoes >= 4 ? "\n🔴 LIMITE ATINGIDO - Remoção iminente!" : "");
-            
-            // Tentar enviar de forma mais direta
-            const chatId = msg.from;
-            await client.pupPage.evaluate((chatId, mensagem) => {
-              const chat = window.Store.Chat.get(chatId);
-              if (chat) {
-                chat.sendMessage(mensagem);
-              }
-            }, chatId, mensagemAviso);
-            
-            console.log(`✅ Aviso enviado via pupPage`);
-          } catch (msgError) {
-            console.error("⚠️ Não foi possível enviar aviso:", msgError.message);
-            // Continua mesmo sem enviar o aviso - o importante é deletar
+          // 2. LOG do aviso (mensagem no console)
+          console.log(`📢 AVISO: Usuário ${userId} - Violações: ${totalViolacoes}/4`);
+          if (totalViolacoes >= 4) {
+            console.log(`🔴 ATENÇÃO: Usuário atingiu limite - será removido!`);
           }
 
           // 3. Remover se necessário
