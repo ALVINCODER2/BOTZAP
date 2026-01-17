@@ -30,8 +30,8 @@ jobs:
           path: |
             .wwebjs_auth
             .wwebjs_cache
-          # CORREÇÃO: Usar data fixa para manter a sessão entre execuções
-          key: whatsapp-session-${{ hashFiles('.wwebjs_auth/**') }}
+          # CORREÇÃO: Usar chave única para forçar restore-keys a pegar a última sessão válida
+          key: whatsapp-session-${{ github.run_id }}
           restore-keys: |
             whatsapp-session-
 
@@ -107,4 +107,4 @@ jobs:
           path: |
             .wwebjs_auth
             .wwebjs_cache
-          key: whatsapp-session-${{ hashFiles('.wwebjs_auth/**') }}
+          key: whatsapp-session-${{ github.run_id }}

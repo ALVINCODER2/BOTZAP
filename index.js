@@ -85,9 +85,9 @@ client.on("ready", () => {
   console.log("✅ Bot conectado e monitorando links!");
   if (fs.existsSync("./qrcode.png")) fs.unlinkSync("./qrcode.png");
 
-  // --- CONFIGURAÇÃO DE TEMPO (5h 55m) ---
-  // Roda o máximo possível para diminuir a janela "offline"
-  const TEMPO_LIMITE = (5 * 60 + 55) * 60 * 1000;
+  // --- CONFIGURAÇÃO DE TEMPO (5h 40m) ---
+  // Roda o máximo possível para diminuir a janela "offline", mas garante shutdown antes do workflow (5h 50m)
+  const TEMPO_LIMITE = (5 * 60 + 40) * 60 * 1000;
 
   setTimeout(async () => {
     console.log("\n⏰ Turno de 5h 55m encerrado. Passando o bastão...");
@@ -189,14 +189,14 @@ client.on("message", async (msg) => {
         // Enviar mensagem de aviso diretamente ao chat
         try {
           const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
-          await chat.sendMessage(mensagemAviso, { mentions: [userId] });
+          await client.sendMessage(chat.id._serialized, mensagemAviso, { mentions: [userId] });
           console.log(`✅ Mensagem de aviso enviada para ${userId}`);
         } catch (msgError) {
           console.error("⚠️ Erro ao enviar mensagem com menção:", msgError.message);
           // Fallback: tentar enviar sem menção
           try {
             const mensagemSimples = `Olá! Sou Bot Exterminador! 🤖🔥\nUm link foi detectado e deletado.\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO!*" : ""}`;
-            await chat.sendMessage(mensagemSimples);
+            await client.sendMessage(chat.id._serialized, mensagemSimples);
             console.log("✅ Mensagem de aviso enviada (sem menção)");
           } catch (fallbackError) {
             console.error("❌ Erro ao enviar mensagem (fallback):", fallbackError.message);
@@ -240,14 +240,14 @@ client.on("message", async (msg) => {
           // Enviar mensagem de aviso diretamente ao chat
           try {
             const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
-            await chat.sendMessage(mensagemAviso, { mentions: [userId] });
+            await client.sendMessage(chat.id._serialized, mensagemAviso, { mentions: [userId] });
             console.log(`✅ Mensagem de aviso enviada para ${userId}`);
           } catch (msgError) {
             console.error("⚠️ Erro ao enviar mensagem com menção:", msgError.message);
             // Fallback: tentar enviar sem menção
             try {
               const mensagemSimples = `Olá! Sou Bot Exterminador! 🤖🔥\nUm link foi detectado e deletado.\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO!*" : ""}`;
-              await chat.sendMessage(mensagemSimples);
+              await client.sendMessage(chat.id._serialized, mensagemSimples);
               console.log("✅ Mensagem de aviso enviada (sem menção)");
             } catch (fallbackError) {
               console.error("❌ Erro ao enviar mensagem (fallback):", fallbackError.message);
