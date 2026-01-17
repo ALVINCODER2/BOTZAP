@@ -163,32 +163,34 @@ client.on("message", async (msg) => {
 
         console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-        // 1. ENVIAR AVISO PRIMEIRO (antes de deletar)
+        // 1. DELETAR O LINK IMEDIATAMENTE
         try {
-          const mensagemAviso = `⚠️ *Link removido!*\n\n📊 *Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n\n🔴 *LIMITE ATINGIDO!*\n_Você será removido do grupo._" : ""}`;
-          
-          await msg.reply(mensagemAviso);
-          console.log(`✅ Aviso enviado (reply)`);
-        } catch (msgError) {
-          console.error("⚠️ Erro ao enviar aviso:", msgError.message);
-          // Fallback: tentar enviar direto no chat
-          try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const mensagemAviso = `⚠️ Link removido! Avisos: ${totalViolacoes}/4`;
-            await client.sendMessage(chat.id._serialized, mensagemAviso);
-            console.log(`✅ Aviso enviado (fallback)`);
-          } catch (fallbackError) {
-            console.error("❌ Fallback falhou:", fallbackError.message);
-          }
-        }
-
-        // 2. DELETAR DEPOIS
-        try {
-          await new Promise(resolve => setTimeout(resolve, 1000));
           await msg.delete(true);
           console.log("✅ Link deletado com sucesso.");
         } catch (delError) {
           console.error("❌ Erro ao deletar link:", delError.message);
+        }
+
+        // 2. ENVIAR AVISO (método mais simples possível)
+        try {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          const mensagemAviso = `⚠️ Link removido! Avisos: ${totalViolacoes}/4` + 
+            (totalViolacoes >= 4 ? "\n🔴 LIMITE ATINGIDO - Remoção iminente!" : "");
+          
+          // Tentar enviar de forma mais direta
+          const chatId = msg.from;
+          await client.pupPage.evaluate((chatId, mensagem) => {
+            const chat = window.Store.Chat.get(chatId);
+            if (chat) {
+              chat.sendMessage(mensagem);
+            }
+          }, chatId, mensagemAviso);
+          
+          console.log(`✅ Aviso enviado via pupPage`);
+        } catch (msgError) {
+          console.error("⚠️ Não foi possível enviar aviso:", msgError.message);
+          // Continua mesmo sem enviar o aviso - o importante é deletar
         }
 
         // 3. Remover do grupo se necessário
@@ -218,32 +220,34 @@ client.on("message", async (msg) => {
 
           console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-          // 1. ENVIAR AVISO PRIMEIRO (antes de deletar)
+          // 1. DELETAR O LINK IMEDIATAMENTE
           try {
-            const mensagemAviso = `⚠️ *Link removido!*\n\n📊 *Avisos hoje: ${totalViolacoes}/4*${totalViolacoes >= 4 ? "\n\n🔴 *LIMITE ATINGIDO!*\n_Você será removido do grupo._" : ""}`;
-            
-            await msg.reply(mensagemAviso);
-            console.log(`✅ Aviso enviado (reply)`);
-          } catch (msgError) {
-            console.error("⚠️ Erro ao enviar aviso:", msgError.message);
-            // Fallback: tentar enviar direto no chat
-            try {
-              await new Promise(resolve => setTimeout(resolve, 500));
-              const mensagemAviso = `⚠️ Link removido! Avisos: ${totalViolacoes}/4`;
-              await client.sendMessage(chat.id._serialized, mensagemAviso);
-              console.log(`✅ Aviso enviado (fallback)`);
-            } catch (fallbackError) {
-              console.error("❌ Fallback falhou:", fallbackError.message);
-            }
-          }
-
-          // 2. DELETAR DEPOIS
-          try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
             await msg.delete(true);
             console.log("✅ Link deletado com sucesso.");
           } catch (delError) {
             console.error("❌ Erro ao deletar mensagem:", delError.message);
+          }
+
+          // 2. ENVIAR AVISO (método mais simples possível)
+          try {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            const mensagemAviso = `⚠️ Link removido! Avisos: ${totalViolacoes}/4` + 
+              (totalViolacoes >= 4 ? "\n🔴 LIMITE ATINGIDO - Remoção iminente!" : "");
+            
+            // Tentar enviar de forma mais direta
+            const chatId = msg.from;
+            await client.pupPage.evaluate((chatId, mensagem) => {
+              const chat = window.Store.Chat.get(chatId);
+              if (chat) {
+                chat.sendMessage(mensagem);
+              }
+            }, chatId, mensagemAviso);
+            
+            console.log(`✅ Aviso enviado via pupPage`);
+          } catch (msgError) {
+            console.error("⚠️ Não foi possível enviar aviso:", msgError.message);
+            // Continua mesmo sem enviar o aviso - o importante é deletar
           }
 
           // 3. Remover se necessário
