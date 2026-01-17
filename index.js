@@ -183,10 +183,25 @@ client.on("message", async (msg) => {
 
         console.log(`🚨 Link deletado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-        // Enviar mensagem de aviso diretamente ao chat (não pode usar reply pois msg foi deletada)
-        const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
-        
-        await chat.sendMessage(mensagemAviso, { mentions: [userId] });
+        // Aguardar um pouco para o WhatsApp processar a exclusão
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Enviar mensagem de aviso diretamente ao chat
+        try {
+          const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
+          await chat.sendMessage(mensagemAviso, { mentions: [userId] });
+          console.log(`✅ Mensagem de aviso enviada para ${userId}`);
+        } catch (msgError) {
+          console.error("⚠️ Erro ao enviar mensagem com menção:", msgError.message);
+          // Fallback: tentar enviar sem menção
+          try {
+            const mensagemSimples = `Olá! Sou Bot Exterminador! 🤖🔥\nUm link foi detectado e deletado.\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO!*" : ""}`;
+            await chat.sendMessage(mensagemSimples);
+            console.log("✅ Mensagem de aviso enviada (sem menção)");
+          } catch (fallbackError) {
+            console.error("❌ Erro ao enviar mensagem (fallback):", fallbackError.message);
+          }
+        }
 
         // Se atingiu 4 violações, remover do grupo
         if (totalViolacoes >= 4) {
@@ -194,11 +209,11 @@ client.on("message", async (msg) => {
             await chat.removeParticipants([userId]);
             console.log(`❌ Usuário ${userId} removido após 4 violações.`);
           } catch (removeError) {
-            console.error("Erro ao remover usuário:", removeError);
+            console.error("Erro ao remover usuário:", removeError.message);
           }
         }
       } catch (e) {
-        console.error("Erro ao processar link:", e);
+        console.error("Erro ao processar link:", e.message);
       }
       return;
     }
@@ -219,10 +234,25 @@ client.on("message", async (msg) => {
 
           console.log(`🚨 Link deletado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-          // Enviar mensagem de aviso diretamente ao chat (não pode usar reply pois msg foi deletada)
-          const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
-          
-          await chat.sendMessage(mensagemAviso, { mentions: [userId] });
+          // Aguardar um pouco para o WhatsApp processar a exclusão
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          // Enviar mensagem de aviso diretamente ao chat
+          try {
+            const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
+            await chat.sendMessage(mensagemAviso, { mentions: [userId] });
+            console.log(`✅ Mensagem de aviso enviada para ${userId}`);
+          } catch (msgError) {
+            console.error("⚠️ Erro ao enviar mensagem com menção:", msgError.message);
+            // Fallback: tentar enviar sem menção
+            try {
+              const mensagemSimples = `Olá! Sou Bot Exterminador! 🤖🔥\nUm link foi detectado e deletado.\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO!*" : ""}`;
+              await chat.sendMessage(mensagemSimples);
+              console.log("✅ Mensagem de aviso enviada (sem menção)");
+            } catch (fallbackError) {
+              console.error("❌ Erro ao enviar mensagem (fallback):", fallbackError.message);
+            }
+          }
 
           // Se atingiu 4 violações, remover do grupo
           if (totalViolacoes >= 4) {
@@ -230,11 +260,11 @@ client.on("message", async (msg) => {
               await chat.removeParticipants([userId]);
               console.log(`❌ Usuário ${userId} removido após 4 violações.`);
             } catch (removeError) {
-              console.error("Erro ao remover usuário:", removeError);
+              console.error("Erro ao remover usuário:", removeError.message);
             }
           }
         } catch (delError) {
-          console.error("Erro ao deletar mensagem:", delError);
+          console.error("Erro ao deletar mensagem:", delError.message);
         }
       }
     } catch (error) {
