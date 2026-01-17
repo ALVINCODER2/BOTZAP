@@ -180,20 +180,22 @@ client.on("message", async (msg) => {
 
         console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-        // 1. Tentar Enviar Aviso (ANTES de deletar para evitar erro 'markedUnread')
+        // 1. Tentar Enviar Aviso (ANTES de deletar)
+        // Usar msg.reply pode evitar o erro 'markedUnread' e conecta melhor o aviso à infração
         try {
           const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
-          await client.sendMessage(chat.id._serialized, mensagemAviso, { mentions: [userId] });
-          console.log(`✅ Mensagem de aviso enviada para ${userId}`);
+          await msg.reply(mensagemAviso, chat.id._serialized, { mentions: [userId] });
+          console.log(`✅ Aviso enviado como resposta para ${userId}`);
         } catch (msgError) {
-          console.error("⚠️ Erro ao enviar mensagem com menção:", msgError.message);
-          // Fallback: tentar enviar sem menção
+          console.error("⚠️ Erro ao responder (tentativa 1):", msgError.message);
+          
+          // Fallback: Tentar sendMessage direto se reply falhar
           try {
-            const mensagemSimples = `Olá! Sou Bot Exterminador! 🤖🔥\nUm link foi detectado e deletado.\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO!*" : ""}`;
-            await client.sendMessage(chat.id._serialized, mensagemSimples);
-            console.log("✅ Mensagem de aviso enviada (sem menção)");
+             const mensagemSimples = `Olá! Sou Bot Exterminador! 🤖🔥\nUm link foi detectado e deletado.\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO!*" : ""}`;
+             await client.sendMessage(chat.id._serialized, mensagemSimples);
+             console.log("✅ Aviso enviado (fallback sendMessage sem menção)");
           } catch (fallbackError) {
-            console.error("❌ Erro ao enviar mensagem (fallback):", fallbackError.message);
+             console.error("❌ Erro total ao enviar mensagem:", fallbackError.message);
           }
         }
 
@@ -239,17 +241,18 @@ client.on("message", async (msg) => {
           // 1. Enviar Aviso (ANTES de deletar)
           try {
             const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
-            await client.sendMessage(chat.id._serialized, mensagemAviso, { mentions: [userId] });
-            console.log(`✅ Mensagem de aviso enviada para ${userId}`);
+            await msg.reply(mensagemAviso, chat.id._serialized, { mentions: [userId] });
+            console.log(`✅ Aviso enviado como resposta para ${userId}`);
           } catch (msgError) {
-            console.error("⚠️ Erro ao enviar mensagem com menção:", msgError.message);
-            // Fallback
+            console.error("⚠️ Erro ao responder (tentativa 1):", msgError.message);
+            
+             // Fallback
             try {
               const mensagemSimples = `Olá! Sou Bot Exterminador! 🤖🔥\nUm link foi detectado e deletado.\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO!*" : ""}`;
               await client.sendMessage(chat.id._serialized, mensagemSimples);
-              console.log("✅ Mensagem de aviso enviada (sem menção)");
+              console.log("✅ Aviso enviado (fallback sendMessage sem menção)");
             } catch (fallbackError) {
-              console.error("❌ Erro ao enviar mensagem (fallback):", fallbackError.message);
+              console.error("❌ Erro total ao enviar mensagem:", fallbackError.message);
             }
           }
 
