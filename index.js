@@ -175,18 +175,12 @@ client.on("message", async (msg) => {
         const chat = await msg.getChat();
         const userId = msg.author || msg.from;
         
-        // Deletar o link
-        await msg.delete(true);
-
-        // Registrar violação e contar
+        // Registrar violação e contar (fazer isso antes para o aviso estar correto)
         const totalViolacoes = registrarViolacao(userId);
 
-        console.log(`🚨 Link deletado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
+        console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-        // Aguardar um pouco para o WhatsApp processar a exclusão e estabilizar o chat
-        await new Promise(resolve => setTimeout(resolve, 3000));
-
-        // Enviar mensagem de aviso diretamente ao chat
+        // 1. Tentar Enviar Aviso (ANTES de deletar para evitar erro 'markedUnread')
         try {
           const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
           await client.sendMessage(chat.id._serialized, mensagemAviso, { mentions: [userId] });
@@ -203,9 +197,20 @@ client.on("message", async (msg) => {
           }
         }
 
-        // Se atingiu 4 violações, remover do grupo
+        // 2. Deletar o link (PRIORIDADE MÁXIMA - Executa mesmo se msg falhar)
+        try {
+          // Pequeno delay para garantir que a msg anterior foi processada (opcional, mas bom pra UX)
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await msg.delete(true);
+          console.log("✅ Link deletado com sucesso.");
+        } catch (delError) {
+          console.error("❌ Erro fatal ao deletar link:", delError.message);
+        }
+
+        // 3. Remover do grupo se necessário
         if (totalViolacoes >= 4) {
           try {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Delay para garantir leitura
             await chat.removeParticipants([userId]);
             console.log(`❌ Usuário ${userId} removido após 4 violações.`);
           } catch (removeError) {
@@ -226,25 +231,19 @@ client.on("message", async (msg) => {
         try {
           const userId = msg.author || msg.from;
           
-          // Deletar o link
-          await msg.delete(true);
-
           // Registrar violação e contar
           const totalViolacoes = registrarViolacao(userId);
 
-          console.log(`🚨 Link deletado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
+          console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-          // Aguardar um pouco para o WhatsApp processar a exclusão e estabilizar o chat
-          await new Promise(resolve => setTimeout(resolve, 3000));
-
-          // Enviar mensagem de aviso diretamente ao chat
+          // 1. Enviar Aviso (ANTES de deletar)
           try {
             const mensagemAviso = `@${userId.split('@')[0]} Olá, Sou Bot Exterminador! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO! Você será removido do grupo.*" : ""}`;
             await client.sendMessage(chat.id._serialized, mensagemAviso, { mentions: [userId] });
             console.log(`✅ Mensagem de aviso enviada para ${userId}`);
           } catch (msgError) {
             console.error("⚠️ Erro ao enviar mensagem com menção:", msgError.message);
-            // Fallback: tentar enviar sem menção
+            // Fallback
             try {
               const mensagemSimples = `Olá! Sou Bot Exterminador! 🤖🔥\nUm link foi detectado e deletado.\n\n⚠️ *Avisos hoje: ${totalViolacoes}/4*\n${totalViolacoes >= 4 ? "🔴 *LIMITE ATINGIDO!*" : ""}`;
               await client.sendMessage(chat.id._serialized, mensagemSimples);
@@ -254,9 +253,19 @@ client.on("message", async (msg) => {
             }
           }
 
-          // Se atingiu 4 violações, remover do grupo
+          // 2. Deletar (SEMPRE)
+          try {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await msg.delete(true);
+            console.log("✅ Link deletado com sucesso.");
+          } catch (delError) {
+              console.error("Erro ao deletar mensagem:", delError.message);
+          }
+
+          // 3. Remover se necessário
           if (totalViolacoes >= 4) {
             try {
+              await new Promise(resolve => setTimeout(resolve, 1000));
               await chat.removeParticipants([userId]);
               console.log(`❌ Usuário ${userId} removido após 4 violações.`);
             } catch (removeError) {
