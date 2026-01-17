@@ -183,8 +183,8 @@ client.on("message", async (msg) => {
 
         console.log(`🚨 Link deletado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-        // Aguardar um pouco para o WhatsApp processar a exclusão
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Aguardar um pouco para o WhatsApp processar a exclusão e estabilizar o chat
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
         // Enviar mensagem de aviso diretamente ao chat
         try {
@@ -234,8 +234,8 @@ client.on("message", async (msg) => {
 
           console.log(`🚨 Link deletado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
 
-          // Aguardar um pouco para o WhatsApp processar a exclusão
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Aguardar um pouco para o WhatsApp processar a exclusão e estabilizar o chat
+          await new Promise(resolve => setTimeout(resolve, 3000));
 
           // Enviar mensagem de aviso diretamente ao chat
           try {
