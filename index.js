@@ -4,7 +4,9 @@ const QRCode = require("qrcode");
 const fs = require("fs");
 
 const client = new Client({
-  authStrategy: new LocalAuth(),
+  authStrategy: new LocalAuth({
+    dataPath: "./.wwebjs_auth"
+  }),
   puppeteer: {
     headless: true,
     args: [
@@ -12,15 +14,20 @@ const client = new Client({
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
+      "--disable-accelerated-2d-canvas",
+      "--no-first-run",
+      "--no-zygote",
+      "--disable-extensions",
       "--hide-scrollbars",
       "--disable-notifications",
+      "--disable-background-timer-throttling",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-renderer-backgrounding",
     ],
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
   },
-  webVersionCache: {
-    type: "remote",
-    remotePath:
-      "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html",
-  },
+  // Remove webVersionCache to use the latest version automatically
+  // This prevents version mismatch issues
 });
 
 let grupoAlvoId = null;
@@ -28,6 +35,29 @@ let isShuttingDown = false; // Trava para evitar reconexão no fim do turno
 
 // Sistema de rastreamento de links por usuário
 let violacoesPorUsuario = {}; // { userId: { count: number, date: string } }
+
+// Handlers de autenticação
+client.on("authenticated", () => {
+  console.log("✅ Autenticação bem-sucedida!");
+});
+
+client.on("auth_failure", (msg) => {
+  console.error("❌ Falha na autenticação:", msg);
+  // Limpar sessão em caso de falha
+  try {
+    const sessionPath = "./.wwebjs_auth";
+    if (fs.existsSync(sessionPath)) {
+      fs.rmSync(sessionPath, { recursive: true, force: true });
+      console.log("🗑️ Sessão corrompida removida");
+    }
+  } catch (error) {
+    console.error("⚠️ Erro ao limpar sessão:", error.message);
+  }
+});
+
+client.on("loading_screen", (percent, message) => {
+  console.log(`⏳ Carregando: ${percent}% - ${message}`);
+});
 
 // Função para resetar contador diário
 function resetarContagemDiaria(userId) {
@@ -83,22 +113,50 @@ client.on("disconnected", async (reason) => {
   console.log("❌ Bot desconectado:", reason);
   grupoAlvoId = null;
 
+  // Para LOGOUT ou NAVIGATION, limpar a sessão e aguardar mais tempo
   if (reason === "LOGOUT" || reason === "NAVIGATION") {
+    console.log("🗑️ Limpando sessão devido a:", reason);
     try {
       const sessionPath = "./.wwebjs_auth";
       if (fs.existsSync(sessionPath)) {
         fs.rmSync(sessionPath, { recursive: true, force: true });
+        console.log("✅ Sessão removida com sucesso");
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("⚠️ Erro ao limpar sessão:", error.message);
+    }
+
+    try {
+      await client.destroy();
+      console.log("✅ Cliente destruído");
+    } catch (error) {
+      console.error("⚠️ Erro ao destruir cliente:", error.message);
+    }
+
+    // Aguardar mais tempo antes de reconectar após LOGOUT
+    console.log("🔄 Aguardando 15 segundos antes de reconectar...");
+    setTimeout(() => {
+      if (!isShuttingDown) {
+        console.log("🔄 Reinicializando cliente...");
+        client.initialize();
+      }
+    }, 15000);
+    return;
   }
 
+  // Para outras desconexões, tentar reconectar mais rápido
   try {
     await client.destroy();
-  } catch (error) {}
+  } catch (error) {
+    console.error("⚠️ Erro ao destruir cliente:", error.message);
+  }
 
   console.log("🔄 Tentando reconectar em 5 segundos...");
   setTimeout(() => {
-    if (!isShuttingDown) client.initialize();
+    if (!isShuttingDown) {
+      console.log("🔄 Reinicializando cliente...");
+      client.initialize();
+    }
   }, 5000);
 });
 
