@@ -35,6 +35,12 @@ jobs:
           restore-keys: |
             whatsapp-session-
 
+      - name: Debug Session Files
+        run: |
+          echo "Listando arquivos de sessão restaurados:"
+          ls -R .wwebjs_auth || echo "Diretório .wwebjs_auth não encontrado"
+          ls -R .wwebjs_cache || echo "Diretório .wwebjs_cache não encontrado"
+
       - name: Instalar Dependências do Projeto
         run: npm ci
 
@@ -100,11 +106,4 @@ jobs:
           # Rodar o bot
           node index.js
         
-      - name: Salvar Sessão (se houver mudanças)
-        if: always()
-        uses: actions/cache/save@v3
-        with:
-          path: |
-            .wwebjs_auth
-            .wwebjs_cache
-          key: whatsapp-session-${{ github.run_id }}
+
