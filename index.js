@@ -126,6 +126,19 @@ client.on("disconnected", async (reason) => {
   console.log("❌ Bot desconectado:", reason);
   gruposAlvoIds = {};
 
+  if (reason === "LOGOUT") {
+    console.log("⚠️ Sessão deslogada. Encerrando processo...");
+    console.log("💡 Execute o bot novamente para fazer novo login.");
+    
+    try {
+      if (fs.existsSync(LOCK_FILE)) {
+        fs.unlinkSync(LOCK_FILE);
+      }
+    } catch (e) {}
+    
+    process.exit(1);
+  }
+
   try {
     await client.destroy();
   } catch (error) {
@@ -168,23 +181,50 @@ client.on("message", async (msg) => {
 
       console.log(`🚨 Link detectado de ${userId} no grupo "${chat.name}". Violações hoje: ${totalViolacoes}/4`);
 
+      const chatId = chat.id._serialized;
+
+      const participants = chat.participants;
+      const botParticipant = participants.find(p => p.id._serialized === client.info.wid._serialized);
+      
+      if (!botParticipant || !botParticipant.isAdmin) {
+        console.log("⚠️ Bot não é admin do grupo. Não pode deletar mensagens.");
+        return;
+      }
+
+      console.log("✅ Bot é admin. Prosseguindo...");
+
       try {
+        console.log("🗑️ Tentando deletar mensagem...");
         await msg.delete(true);
         console.log("✅ Link deletado com sucesso.");
       } catch (delError) {
         console.error("❌ Erro ao deletar link:", delError.message);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const mensagemAviso = `Olá, Sou o Bot Exterminador de Links! 🤖🔥\nSeu link foi detectado, neutralizado e completamente exterminado 💥🚫😈🚀`;
 
-      try {
-        const mensagemAviso = `⚠️ Link removido!\n\nAvisos hoje: ${totalViolacoes}/4` + 
-          (totalViolacoes >= 4 ? `\n\n🔴 LIMITE ATINGIDO - Remoção iminente!` : "");
-        
-        await chat.sendMessage(mensagemAviso);
-        console.log(`✅ Aviso enviado no grupo`);
-      } catch (msgError) {
-        console.error("⚠️ Erro ao enviar aviso:", msgError.message);
+      let avisoEnviado = false;
+      for (let tentativa = 1; tentativa <= 3; tentativa++) {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 800 * tentativa));
+          const chatAtualizado = await client.getChatById(chatId);
+          await chatAtualizado.sendMessage(mensagemAviso, { linkPreview: false, sendSeen: false });
+          console.log("✅ Aviso enviado no grupo");
+          avisoEnviado = true;
+          break;
+        } catch (msgError) {
+          console.error(`⚠️ Falha ao enviar aviso (tentativa ${tentativa})`);
+        }
+      }
+
+      if (!avisoEnviado) {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          await client.sendMessage(chatId, mensagemAviso, { linkPreview: false, sendSeen: false });
+          console.log("✅ Aviso enviado no grupo");
+        } catch (msgError) {
+          console.error("❌ Aviso não enviado após tentativas");
+        }
       }
 
       console.log(`📢 Usuário ${userId} - Violações: ${totalViolacoes}/4`);
@@ -192,7 +232,8 @@ client.on("message", async (msg) => {
       if (totalViolacoes >= 4) {
         try {
           await new Promise(resolve => setTimeout(resolve, 1000));
-          await chat.removeParticipants([userId]);
+          const chatParaRemover = await client.getChatById(chatId);
+          await chatParaRemover.removeParticipants([userId]);
           console.log(`❌ Usuário ${userId} removido após 4 violações.`);
         } catch (removeError) {
           console.error("⚠️ Erro ao remover usuário:", removeError.message);
