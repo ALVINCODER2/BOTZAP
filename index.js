@@ -181,7 +181,7 @@ client.on("message", async (msg) => {
         const mensagemAviso = `⚠️ Link removido!\n\nAvisos hoje: ${totalViolacoes}/4` + 
           (totalViolacoes >= 4 ? `\n\n🔴 LIMITE ATINGIDO - Remoção iminente!` : "");
         
-        await client.sendMessage(chat.id._serialized, mensagemAviso);
+        await chat.sendMessage(mensagemAviso);
         console.log(`✅ Aviso enviado no grupo`);
       } catch (msgError) {
         console.error("⚠️ Erro ao enviar aviso:", msgError.message);
