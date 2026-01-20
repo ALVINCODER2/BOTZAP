@@ -178,12 +178,10 @@ client.on("message", async (msg) => {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       try {
-        const contact = await client.getContactById(userId);
-        const nome = contact.pushname || contact.name || userId.split("@")[0];
-        const mensagemAviso = `⚠️ @${userId.split("@")[0]}, link removido!\n\nAvisos hoje: ${totalViolacoes}/4` + 
+        const mensagemAviso = `⚠️ Link removido!\n\nAvisos hoje: ${totalViolacoes}/4` + 
           (totalViolacoes >= 4 ? `\n\n🔴 LIMITE ATINGIDO - Remoção iminente!` : "");
         
-        await chat.sendMessage(chat.id._serialized, mensagemAviso);
+        await client.sendMessage(chat.id._serialized, mensagemAviso);
         console.log(`✅ Aviso enviado no grupo`);
       } catch (msgError) {
         console.error("⚠️ Erro ao enviar aviso:", msgError.message);
