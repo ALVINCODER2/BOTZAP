@@ -57,7 +57,8 @@ const client = new Client({
   },
 });
 
-let grupoAlvoId = null;
+const GRUPOS_MONITORADOS = ["DAMAS APOSTADO ♟️", "Teste"];
+let gruposAlvoIds = {};
 let isShuttingDown = false;
 let violacoesPorUsuario = {};
 
@@ -123,7 +124,7 @@ client.on("disconnected", async (reason) => {
   }
 
   console.log("❌ Bot desconectado:", reason);
-  grupoAlvoId = null;
+  gruposAlvoIds = {};
 
   try {
     await client.destroy();
@@ -149,105 +150,58 @@ client.on("message", async (msg) => {
   if (linkRegex.test(msg.body) && !msg.fromMe) {
     if (msg.body.includes("damasarena.fly.dev")) return;
 
-    if (grupoAlvoId && msg.from === grupoAlvoId) {
-      try {
-        const chat = await msg.getChat();
-        const userId = msg.author || msg.from;
-        const totalViolacoes = registrarViolacao(userId);
-
-        console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
-
-        // 1. AVISAR (reply é seguro)
-        try {
-          const mensagemAviso = `⚠️ Link removido!\n\nAvisos hoje: ${totalViolacoes}/4` + 
-            (totalViolacoes >= 4 ? `\n\n🔴 LIMITE ATINGIDO - Remoção iminente!` : "");
-          
-          await msg.reply(mensagemAviso);
-          console.log(`✅ Aviso enviado no grupo`);
-        } catch (msgError) {
-          console.error("⚠️ Erro ao enviar aviso:", msgError.message);
-        }
-
-        // 2. Aguardar curto intervalo
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        // 3. DELETAR
-        try {
-          await msg.delete(true);
-          console.log("✅ Link deletado com sucesso.");
-        } catch (delError) {
-          console.error("❌ Erro ao deletar link:", delError.message);
-        }
-
-        console.log(`📢 Usuário ${userId} - Violações: ${totalViolacoes}/4`);
-
-        // 3. Remover do grupo se necessário
-        if (totalViolacoes >= 4) {
-          try {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            await chat.removeParticipants([userId]);
-            console.log(`❌ Usuário ${userId} removido após 4 violações.`);
-          } catch (removeError) {
-            console.error("⚠️ Erro ao remover usuário:", removeError.message);
-          }
-        }
-      } catch (e) {
-        console.error("❌ Erro ao processar link:", e.message);
-      }
-      return;
-    }
-
     try {
       const chat = await msg.getChat();
-      if (chat.isGroup && chat.name === "DAMAS APOSTADO ♟️") {
-        grupoAlvoId = chat.id._serialized;
+      
+      if (!chat.isGroup) return;
+
+      const isMonitorado = GRUPOS_MONITORADOS.includes(chat.name);
+      if (!isMonitorado) return;
+
+      if (!gruposAlvoIds[chat.id._serialized]) {
+        gruposAlvoIds[chat.id._serialized] = chat.name;
+        console.log(`📋 Grupo "${chat.name}" adicionado ao monitoramento`);
+      }
+
+      const userId = msg.author || msg.from;
+      const totalViolacoes = registrarViolacao(userId);
+
+      console.log(`🚨 Link detectado de ${userId} no grupo "${chat.name}". Violações hoje: ${totalViolacoes}/4`);
+
+      try {
+        await msg.delete(true);
+        console.log("✅ Link deletado com sucesso.");
+      } catch (delError) {
+        console.error("❌ Erro ao deletar link:", delError.message);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      try {
+        const contact = await client.getContactById(userId);
+        const nome = contact.pushname || contact.name || userId.split("@")[0];
+        const mensagemAviso = `⚠️ @${userId.split("@")[0]}, link removido!\n\nAvisos hoje: ${totalViolacoes}/4` + 
+          (totalViolacoes >= 4 ? `\n\n🔴 LIMITE ATINGIDO - Remoção iminente!` : "");
         
+        await chat.sendMessage(chat.id._serialized, mensagemAviso);
+        console.log(`✅ Aviso enviado no grupo`);
+      } catch (msgError) {
+        console.error("⚠️ Erro ao enviar aviso:", msgError.message);
+      }
+
+      console.log(`📢 Usuário ${userId} - Violações: ${totalViolacoes}/4`);
+
+      if (totalViolacoes >= 4) {
         try {
-          const userId = msg.author || msg.from;
-          const totalViolacoes = registrarViolacao(userId);
-
-          console.log(`🚨 Link detectado de ${userId}. Violações hoje: ${totalViolacoes}/4`);
-
-          // 1. AVISAR (reply é seguro)
-          try {
-            const mensagemAviso = `⚠️ Link removido!\n\nAvisos hoje: ${totalViolacoes}/4` + 
-              (totalViolacoes >= 4 ? `\n\n🔴 LIMITE ATINGIDO - Remoção iminente!` : "");
-            
-            await msg.reply(mensagemAviso);
-            console.log(`✅ Aviso enviado no grupo`);
-          } catch (msgError) {
-            console.error("⚠️ Erro ao enviar aviso:", msgError.message);
-          }
-
-          // 2. Aguardar curto intervalo
-          await new Promise(resolve => setTimeout(resolve, 800));
-
-          // 3. DELETAR
-          try {
-            await msg.delete(true);
-            console.log("✅ Link deletado com sucesso.");
-          } catch (delError) {
-            console.error("❌ Erro ao deletar mensagem:", delError.message);
-          }
-
-          console.log(`📢 Usuário ${userId} - Violações: ${totalViolacoes}/4`);
-
-          // 3. Remover se necessário
-          if (totalViolacoes >= 4) {
-            try {
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              await chat.removeParticipants([userId]);
-              console.log(`❌ Usuário ${userId} removido após 4 violações.`);
-            } catch (removeError) {
-              console.error("⚠️ Erro ao remover usuário:", removeError.message);
-            }
-          }
-        } catch (delError) {
-          console.error("❌ Erro ao processar:", delError.message);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await chat.removeParticipants([userId]);
+          console.log(`❌ Usuário ${userId} removido após 4 violações.`);
+        } catch (removeError) {
+          console.error("⚠️ Erro ao remover usuário:", removeError.message);
         }
       }
     } catch (error) {
-      console.error("❌ Erro ao obter chat:", error);
+      console.error("❌ Erro ao processar mensagem:", error.message);
     }
   }
 });
