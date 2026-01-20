@@ -3,6 +3,35 @@ const qrcodeTerminal = require("qrcode-terminal");
 const QRCode = require("qrcode");
 const fs = require("fs");
 
+const LOCK_FILE = "./bot.lock";
+
+if (fs.existsSync(LOCK_FILE)) {
+  const lockData = fs.readFileSync(LOCK_FILE, "utf8");
+  const { pid, timestamp } = JSON.parse(lockData);
+  const agora = Date.now();
+  
+  if (agora - timestamp < 6 * 60 * 60 * 1000) {
+    console.log(`⚠️ Bot já está rodando (PID: ${pid}). Encerrando duplicata.`);
+    process.exit(0);
+  } else {
+    console.log("🔄 Lock expirado. Removendo...");
+    fs.unlinkSync(LOCK_FILE);
+  }
+}
+
+fs.writeFileSync(LOCK_FILE, JSON.stringify({ 
+  pid: process.pid, 
+  timestamp: Date.now() 
+}));
+
+process.on("exit", () => {
+  try {
+    if (fs.existsSync(LOCK_FILE)) {
+      fs.unlinkSync(LOCK_FILE);
+    }
+  } catch (e) {}
+});
+
 const client = new Client({
   authStrategy: new LocalAuth({
     dataPath: "./.wwebjs_auth"
@@ -38,15 +67,6 @@ client.on("authenticated", () => {
 
 client.on("auth_failure", (msg) => {
   console.error("❌ Falha na autenticação:", msg);
-  try {
-    const sessionPath = "./.wwebjs_auth";
-    if (fs.existsSync(sessionPath)) {
-      fs.rmSync(sessionPath, { recursive: true, force: true });
-      console.log("🗑️ Sessão corrompida removida");
-    }
-  } catch (error) {
-    console.error("⚠️ Erro ao limpar sessão:", error.message);
-  }
 });
 
 client.on("loading_screen", (percent, message) => {
@@ -84,6 +104,9 @@ client.on("ready", () => {
     isShuttingDown = true;
 
     try {
+      if (fs.existsSync(LOCK_FILE)) {
+        fs.unlinkSync(LOCK_FILE);
+      }
       await client.destroy();
       console.log("✅ Sessão encerrada. Tchau!");
       process.exit(0);
@@ -101,35 +124,6 @@ client.on("disconnected", async (reason) => {
 
   console.log("❌ Bot desconectado:", reason);
   grupoAlvoId = null;
-
-  if (reason === "LOGOUT" || reason === "NAVIGATION") {
-    console.log("🗑️ Limpando sessão devido a:", reason);
-    try {
-      const sessionPath = "./.wwebjs_auth";
-      if (fs.existsSync(sessionPath)) {
-        fs.rmSync(sessionPath, { recursive: true, force: true });
-        console.log("✅ Sessão removida com sucesso");
-      }
-    } catch (error) {
-      console.error("⚠️ Erro ao limpar sessão:", error.message);
-    }
-
-    try {
-      await client.destroy();
-      console.log("✅ Cliente destruído");
-    } catch (error) {
-      console.error("⚠️ Erro ao destruir cliente:", error.message);
-    }
-
-    console.log("🔄 Aguardando 15 segundos antes de reconectar...");
-    setTimeout(() => {
-      if (!isShuttingDown) {
-        console.log("🔄 Reinicializando cliente...");
-        client.initialize();
-      }
-    }, 15000);
-    return;
-  }
 
   try {
     await client.destroy();
