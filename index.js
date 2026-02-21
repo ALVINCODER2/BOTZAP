@@ -23,6 +23,10 @@ const POLL_ERROR_LOG_THROTTLE_MS = 30000;
 
 const GROUPS_MONITORED = ["DAMAS APOSTADO ♟️", "Teste"];
 const ALLOWED_SNIPPETS = ["damasarena.fly.dev"];
+const GROUP_IDS_FROM_ENV = (process.env.MONITORED_GROUP_IDS || "")
+  .split(",")
+  .map((v) => v.trim())
+  .filter(Boolean);
 
 const state = {
   setupDone: false,
@@ -282,11 +286,29 @@ function loadMonitoredGroupIds() {
   }
 }
 
+function getMonitoredGroupIdsFromEnv() {
+  return new Set(GROUP_IDS_FROM_ENV);
+}
+
+function addMonitoredGroupId(groupId) {
+  if (!groupId) return;
+  if (state.monitoredGroupIds.has(groupId)) return;
+  state.monitoredGroupIds.add(groupId);
+  saveMonitoredGroupIds(state.monitoredGroupIds);
+}
+
 async function executeSetup() {
   if (state.setupDone) return;
   state.setupDone = true;
 
   console.log("Executando setup do bot...");
+
+  // Carrega cache logo no inicio para manter polling ativo mesmo se getChats falhar.
+  const cachedAtBoot = loadMonitoredGroupIds();
+  if (cachedAtBoot.size > 0) {
+    state.monitoredGroupIds = cachedAtBoot;
+    console.log(`Cache local de grupos carregado (${cachedAtBoot.size}).`);
+  }
 
   try {
     const chats = await safeGetChats(6, 2000);
@@ -316,9 +338,20 @@ async function executeSetup() {
         `Usando cache local de grupos monitorados (${cachedIds.size}) devido a falha do getChats.`,
       );
     } else {
-      console.log(
-        "Sem cache local de grupos monitorados. O polling ficara inativo ate conseguir mapear grupos.",
-      );
+      const envIds = getMonitoredGroupIdsFromEnv();
+      if (envIds.size > 0) {
+        state.monitoredGroupIds = envIds;
+        console.log(
+          `Usando IDs de grupos via MONITORED_GROUP_IDS (${envIds.size}).`,
+        );
+      } else {
+        console.log(
+          "Sem cache local de grupos monitorados. O polling ficara inativo ate conseguir mapear grupos.",
+        );
+        console.log(
+          "Defina MONITORED_GROUP_IDS com IDs de grupo separados por virgula para rodar em ambiente sem getChats.",
+        );
+      }
     }
   }
 
@@ -567,6 +600,7 @@ async function processModeration(msg, source) {
   const userId = msg.author || msg.from;
   const count = registerViolation(userId);
   const chatId = chat.id._serialized;
+  addMonitoredGroupId(chatId);
 
   console.log(
     `Link detectado no grupo "${chat.name}" por ${userId}. Violacoes hoje: ${count}/${VIOLATION_LIMIT}`,
