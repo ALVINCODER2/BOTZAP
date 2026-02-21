@@ -7,6 +7,7 @@ const QRCode = require("qrcode");
 const LOCK_FILE = path.resolve(__dirname, "bot.lock");
 const QR_FILE = path.resolve(__dirname, "qrcode.png");
 const WEB_CACHE_DIR = path.resolve(__dirname, ".wwebjs_cache");
+const GROUP_IDS_CACHE_FILE = path.resolve(__dirname, "monitored-groups.json");
 const SESSION_MAX_MS = (5 * 60 + 40) * 60 * 1000;
 const READY_FALLBACK_MS = 30000;
 const SETUP_FALLBACK_AFTER_AUTH_MS = 6000;
@@ -242,14 +243,43 @@ async function safeGetChats(retries = 20, delayMs = 3000) {
       return await client.getChats();
     } catch (err) {
       lastErr = err;
+      const errText = `${err && err.message ? err.message : err}`;
       console.log(
-        `safeGetChats tentativa ${i}/${retries} falhou: ${err && err.message ? err.message : err}`,
+        `safeGetChats tentativa ${i}/${retries} falhou: ${errText}`,
       );
+
+      // Em algumas versoes do WA Web, esse erro indica contexto parcial/injetado.
+      // Evita ficar preso em muitas tentativas iguais.
+      if (errText.includes("reading 'update'")) {
+        break;
+      }
       await sleep(delayMs);
     }
   }
 
   throw lastErr;
+}
+
+function saveMonitoredGroupIds(groupIds) {
+  try {
+    const data = {
+      updatedAt: new Date().toISOString(),
+      groupIds: Array.from(groupIds),
+    };
+    fs.writeFileSync(GROUP_IDS_CACHE_FILE, JSON.stringify(data, null, 2));
+  } catch (_err) {}
+}
+
+function loadMonitoredGroupIds() {
+  try {
+    if (!fs.existsSync(GROUP_IDS_CACHE_FILE)) return new Set();
+    const raw = fs.readFileSync(GROUP_IDS_CACHE_FILE, "utf8");
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.groupIds)) return new Set();
+    return new Set(parsed.groupIds.filter((id) => typeof id === "string" && id));
+  } catch (_err) {
+    return new Set();
+  }
 }
 
 async function executeSetup() {
@@ -259,7 +289,7 @@ async function executeSetup() {
   console.log("Executando setup do bot...");
 
   try {
-    const chats = await safeGetChats();
+    const chats = await safeGetChats(6, 2000);
     const groups = chats.filter((chat) => chat.isGroup);
     const monitored = groups.filter((group) =>
       GROUPS_MONITORED.includes(group.name),
@@ -267,6 +297,7 @@ async function executeSetup() {
     state.monitoredGroupIds = new Set(
       monitored.map((group) => group.id._serialized),
     );
+    saveMonitoredGroupIds(state.monitoredGroupIds);
 
     console.log(`Total de grupos encontrados: ${groups.length}`);
     console.log(
@@ -277,6 +308,18 @@ async function executeSetup() {
       "Erro ao listar grupos:",
       err && err.message ? err.message : err,
     );
+
+    const cachedIds = loadMonitoredGroupIds();
+    if (cachedIds.size > 0) {
+      state.monitoredGroupIds = cachedIds;
+      console.log(
+        `Usando cache local de grupos monitorados (${cachedIds.size}) devido a falha do getChats.`,
+      );
+    } else {
+      console.log(
+        "Sem cache local de grupos monitorados. O polling ficara inativo ate conseguir mapear grupos.",
+      );
+    }
   }
 
   if (fs.existsSync(QR_FILE)) {
